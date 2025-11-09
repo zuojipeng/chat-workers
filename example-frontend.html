@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Worker 前端示例</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .chat-container {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      height: 500px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      background: #f9f9f9;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .user-message {
+      background: #007bff;
+      color: white;
+      text-align: right;
+    }
+    .ai-message {
+      background: #e9ecef;
+      color: #333;
+    }
+    .input-container {
+      display: flex;
+      gap: 10px;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    #sendButton {
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #sendButton:hover {
+      background: #0056b3;
+    }
+    #sendButton:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+    .error {
+      color: red;
+      background: #ffe6e6;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Chat Worker 聊天示例</h1>
+  
+  <div class="chat-container" id="chatContainer"></div>
+  
+  <div class="input-container">
+    <input 
+      type="text" 
+      id="messageInput" 
+      placeholder="输入你的消息..."
+      onkeypress="handleKeyPress(event)"
+    />
+    <button id="sendButton" onclick="sendMessage()">发送</button>
+  </div>
+
+  <script>
+    // ⚠️ 重要：根据你的环境选择正确的 URL
+    
+    // 本地开发时使用（运行 npm run dev 后）：
+    const GRAPHQL_ENDPOINT = 'http://localhost:8787';
+    
+    // 生产环境使用（部署后）：
+    // const GRAPHQL_ENDPOINT = 'https://chat-worker.your-username.workers.dev';
+
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+
+    // 发送消息到 GraphQL API
+    async function sendMessage() {
+      const content = messageInput.value.trim();
+      if (!content) return;
+
+      // 显示用户消息
+      addMessage('user', content);
+      messageInput.value = '';
+      sendButton.disabled = true;
+      sendButton.textContent = '发送中...';
+
+      // 显示加载提示
+      const loadingId = addMessage('ai', '正在思考...', true);
+
+      try {
+        const response = await fetch(GRAPHQL_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: `
+              mutation PostMessage($content: String!) {
+                postMessage(content: $content) {
+                  id
+                  role
+                  content
+                }
+              }
+            `,
+            variables: {
+              content: content
+            }
+          })
+        });
+
+        const result = await response.json();
+
+        // 移除加载提示
+        removeMessage(loadingId);
+
+        if (result.errors) {
+          throw new Error(result.errors[0].message);
+        }
+
+        // 显示 AI 回复
+        const aiMessage = result.data.postMessage;
+        addMessage('ai', aiMessage.content);
+
+      } catch (error) {
+        // 移除加载提示
+        removeMessage(loadingId);
+        
+        // 显示错误
+        addError(`错误: ${error.message}`);
+        console.error('发送消息失败:', error);
+      } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = '发送';
+      }
+    }
+
+    // 添加消息到聊天容器
+    function addMessage(role, content, isLoading = false) {
+      const messageDiv = document.createElement('div');
+      const messageId = 'msg-' + Date.now() + '-' + Math.random();
+      messageDiv.id = messageId;
+      messageDiv.className = `message ${role}-message ${isLoading ? 'loading' : ''}`;
+      messageDiv.textContent = content;
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      return messageId;
+    }
+
+    // 移除消息
+    function removeMessage(messageId) {
+      const message = document.getElementById(messageId);
+      if (message) {
+        message.remove();
+      }
+    }
+
+    // 添加错误消息
+    function addError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = message;
+      chatContainer.appendChild(errorDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // 处理回车键
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>
+
