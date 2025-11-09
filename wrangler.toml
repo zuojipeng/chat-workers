@@ -1,6 +1,7 @@
-name = "chat-worker"
+name = 'crimson-brook-04a5'
 main = "src/index.ts"
 compatibility_date = "2023-10-30"
+
 
 [vars]
 DEEPSEEK_API_KEY = "sk-18fb922108e6494e8f24b1716f3af803"
