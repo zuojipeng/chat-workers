@@ -11,8 +11,8 @@ dist/
 .env.local
 .env.*.local
 
-# Wrangler config with secrets (optional, if you want to keep local config private)
-# wrangler.toml
+# Local Wrangler config with secrets (keep local config private)
+wrangler.local.toml
 
 # IDE
 .vscode/

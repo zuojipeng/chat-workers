@@ -34,6 +34,8 @@ npx wrangler secret put DEEPSEEK_API_KEY
 
 运行后会提示你输入 API Key，输入你的 DeepSeek API Key 即可。
 
+**注意**：Secrets 是加密存储的，只有部署后的 Worker 可以访问，不会出现在代码或配置文件中。
+
 ### 4. 部署到 Cloudflare Workers
 
 ```bash

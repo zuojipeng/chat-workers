@@ -72,10 +72,31 @@
       border-radius: 4px;
       margin: 10px 0;
     }
+    .message.system-message {
+      background: #fff3cd;
+      color: #856404;
+      text-align: center;
+      font-size: 12px;
+      padding: 5px 10px;
+    }
   </style>
 </head>
 <body>
   <h1>Chat Worker 聊天示例</h1>
+  
+  <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd; border-radius: 4px;">
+    <label for="apiUrlInput" style="display: block; margin-bottom: 5px; font-weight: bold;">API 地址：</label>
+    <input 
+      type="text" 
+      id="apiUrlInput" 
+      placeholder="https://crimson-brook-04a5.your-username.workers.dev"
+      style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+      onchange="updateApiUrl()"
+    />
+    <small style="color: #666; display: block; margin-top: 5px;">
+      💡 从 Cloudflare Workers 控制台获取你的 Worker URL（点击右上角 "Visit" 按钮）
+    </small>
+  </div>
   
   <div class="chat-container" id="chatContainer"></div>
   
@@ -90,13 +111,27 @@
   </div>
 
   <script>
-    // ⚠️ 重要：根据你的环境选择正确的 URL
+    // API 地址配置
+    // 默认使用本地开发地址，用户可以在页面上输入线上地址
+    let GRAPHQL_ENDPOINT = localStorage.getItem('apiUrl') || 'http://localhost:8787';
     
-    // 本地开发时使用（运行 npm run dev 后）：
-    const GRAPHQL_ENDPOINT = 'http://localhost:8787';
-    
-    // 生产环境使用（部署后）：
-    // const GRAPHQL_ENDPOINT = 'https://chat-worker.your-username.workers.dev';
+    // 初始化时从 localStorage 读取保存的 URL
+    window.addEventListener('DOMContentLoaded', () => {
+      const apiUrlInput = document.getElementById('apiUrlInput');
+      if (apiUrlInput && GRAPHQL_ENDPOINT) {
+        apiUrlInput.value = GRAPHQL_ENDPOINT;
+      }
+    });
+
+    // 更新 API URL
+    function updateApiUrl() {
+      const apiUrlInput = document.getElementById('apiUrlInput');
+      if (apiUrlInput && apiUrlInput.value.trim()) {
+        GRAPHQL_ENDPOINT = apiUrlInput.value.trim();
+        localStorage.setItem('apiUrl', GRAPHQL_ENDPOINT);
+        addMessage('system', `✅ API 地址已更新为: ${GRAPHQL_ENDPOINT}`, false);
+      }
+    }
 
     const chatContainer = document.getElementById('chatContainer');
     const messageInput = document.getElementById('messageInput');
